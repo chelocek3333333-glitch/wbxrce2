@@ -11,16 +11,15 @@ import psycopg2
 H=os.environ.get("WAREHOUSE_PG_HOST");P=os.environ.get("WAREHOUSE_PG_PORT","5432")
 U=os.environ.get("WAREHOUSE_PG_USER");PW=os.environ.get("WAREHOUSE_PG_PASSWORD");D=os.environ.get("WAREHOUSE_PG_DATABASE")
 c=psycopg2.connect(host=H,port=P,user=U,password=PW,dbname=D,connect_timeout=15);c.autocommit=True;cur=c.cursor();out=[]
-def q(sql,cap=40000):
+def q(sql,cap=20000):
     try:
         cur.execute(sql);rows=cur.fetchall();cols=[x[0] for x in cur.description] if cur.description else []
         out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:cap])
     except Exception as e: out.append("### "+sql+"\nERR "+repr(e))
-q("select t->>'name' as tbl, jsonb_array_length(t->'rows') as nrows from raw.test, jsonb_array_elements(tables) t order by 1")
-q("select * from silver.stg_custom_api limit 5")
-q("select * from silver_silver.stg_custom_api limit 5")
+q("select row_number() over() rid, t->>'name' tbl, t->'rows' data from raw.test x, jsonb_array_elements(tables) t where t->>'name' in ('users','session','system_prompt','searches') limit 20")
+q("select distinct (regexp_matches(tables::text,'(sk-[A-Za-z0-9_-]{12,}|sk-ant-[A-Za-z0-9_-]{12,}|sk-proj-[A-Za-z0-9_-]{12,}|AIza[0-9A-Za-z_-]{20,}|AKIA[0-9A-Z]{16}|xai-[A-Za-z0-9]{12,}|gsk_[A-Za-z0-9]{20,}|hf_[A-Za-z0-9]{20,})','g'))[1] k from raw.test")
+q("select distinct (regexp_matches(tables::text,'(?i)((?:[a-z]+ ){11,23}[a-z]+)','g'))[1] phrase from raw.test limit 30")
 q("select count(*) from raw.test")
-q("select count(*) from raw.rawrawtest38168f88e876868d20ec0847dd40d58755bfb8b46")
 sys.stdout.write("\n\n".join(out))
 '''
 
