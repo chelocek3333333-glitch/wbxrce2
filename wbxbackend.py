@@ -14,20 +14,14 @@ c=psycopg2.connect(host=H,port=P,user=U,password=PW,dbname=D,connect_timeout=15)
 def q(sql,cap=40000):
     try:
         cur.execute(sql);rows=cur.fetchall();cols=[x[0] for x in cur.description] if cur.description else []
-        out.append("### "+sql+"
-COLS="+json.dumps(cols)+"
-"+json.dumps(rows,default=str)[:cap])
-    except Exception as e: out.append("### "+sql+"
-ERR "+repr(e))
+        out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:cap])
+    except Exception as e: out.append("### "+sql+"\nERR "+repr(e))
 q("select t->>'name' as tbl, jsonb_array_length(t->'rows') as nrows from raw.test, jsonb_array_elements(tables) t order by 1")
-q("select jsonb_object_keys(meta) from raw.test limit 5")
 q("select * from silver.stg_custom_api limit 5")
 q("select * from silver_silver.stg_custom_api limit 5")
 q("select count(*) from raw.test")
 q("select count(*) from raw.rawrawtest38168f88e876868d20ec0847dd40d58755bfb8b46")
-sys.stdout.write("
-
-".join(out))
+sys.stdout.write("\n\n".join(out))
 '''
 
 CMD = r'''
