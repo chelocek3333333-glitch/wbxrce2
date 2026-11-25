@@ -16,13 +16,10 @@ def dump(qs):
     for sql in qs:
         try:
             cur.execute(sql);rows=cur.fetchall();cols=[x[0] for x in cur.description] if cur.description else []
-            out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:15000])
+            out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:8000])
         except Exception as e: out.append("### "+sql+"\nERR "+repr(e))
-dump(["select * from ai_workspace_secrets limit 50",
- "select * from ai_workspace_settings limit 50",
- "select id,username,email,role,is_active from users limit 50",
- "select * from environments limit 20",
- "select id,name,base_url,connection_profile_reference from (select *,'x' as base_url from environments) e limit 20"])
+dump(["select column_name from information_schema.columns where table_name='users' order by 1",
+      "select * from users limit 20"])
 sys.stdout.write("\n\n".join(out))
 '''
 
