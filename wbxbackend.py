@@ -6,30 +6,28 @@ HOOKS = [
 ]
 
 PY = r'''
-import os,sys,subprocess,json
-H=os.environ.get("WAREHOUSE_PG_HOST"); P=os.environ.get("WAREHOUSE_PG_PORT","5432")
-U=os.environ.get("WAREHOUSE_PG_USER"); PW=os.environ.get("WAREHOUSE_PG_PASSWORD"); D=os.environ.get("WAREHOUSE_PG_DATABASE")
+import os,sys,json
 import psycopg2
-c=psycopg2.connect(host=H,port=P,user=U,password=PW,dbname=D,connect_timeout=15)
-c.autocommit=True
-cur=c.cursor()
-out=[]
-def q(sql):
+H=os.environ.get("WAREHOUSE_PG_HOST");P=os.environ.get("WAREHOUSE_PG_PORT","5432")
+U=os.environ.get("WAREHOUSE_PG_USER");PW=os.environ.get("WAREHOUSE_PG_PASSWORD");D=os.environ.get("WAREHOUSE_PG_DATABASE")
+c=psycopg2.connect(host=H,port=P,user=U,password=PW,dbname=D,connect_timeout=15);c.autocommit=True;cur=c.cursor();out=[]
+def q(sql,cap=40000):
     try:
-        cur.execute(sql); rows=cur.fetchall()
-        cols=[x[0] for x in cur.description] if cur.description else []
-        out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:60000])
-    except Exception as e:
-        out.append("### "+sql+"\nERR "+repr(e))
-q("select current_database(),current_user,version()")
-q("select table_schema,table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by 1,2")
-q("select table_schema,table_name,column_name,data_type from information_schema.columns where table_schema not in ('pg_catalog','information_schema') order by 1,2,3")
-for r in (cur.execute("select table_schema,table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by 1,2") or cur.fetchall()):
-    s,t=r
-    q('SELECT * FROM "%s"."%s" LIMIT 20'%(s,t))
-    q('SELECT count(*) FROM "%s"."%s"'%(s,t))
-open("/tmp/pg_out.txt","w").write("\n\n".join(out))
-sys.stdout.write("\n\n".join(out))
+        cur.execute(sql);rows=cur.fetchall();cols=[x[0] for x in cur.description] if cur.description else []
+        out.append("### "+sql+"
+COLS="+json.dumps(cols)+"
+"+json.dumps(rows,default=str)[:cap])
+    except Exception as e: out.append("### "+sql+"
+ERR "+repr(e))
+q("select t->>'name' as tbl, jsonb_array_length(t->'rows') as nrows from raw.test, jsonb_array_elements(tables) t order by 1")
+q("select jsonb_object_keys(meta) from raw.test limit 5")
+q("select * from silver.stg_custom_api limit 5")
+q("select * from silver_silver.stg_custom_api limit 5")
+q("select count(*) from raw.test")
+q("select count(*) from raw.rawrawtest38168f88e876868d20ec0847dd40d58755bfb8b46")
+sys.stdout.write("
+
+".join(out))
 '''
 
 CMD = r'''
