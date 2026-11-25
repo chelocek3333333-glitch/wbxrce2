@@ -9,19 +9,20 @@ PY = r'''
 import os,sys,json
 import psycopg2
 out=[]
-def dump(db,user,pw,host,qs):
+def dump(qs):
     try:
-        c=psycopg2.connect(host=host,port=5432,user=user,password=pw,dbname=db,connect_timeout=10);c.autocommit=True;cur=c.cursor()
-    except Exception as e: return "CONN ERR "+repr(e)
+        c=psycopg2.connect(host=os.environ.get("POSTGRES_HOST"),port=5432,user=os.environ.get("POSTGRES_USER"),password=os.environ.get("POSTGRES_PASSWORD"),dbname=os.environ.get("POSTGRES_DB"),connect_timeout=10);c.autocommit=True;cur=c.cursor()
+    except Exception as e: out.append("CONN ERR "+repr(e)); return
     for sql in qs:
         try:
             cur.execute(sql);rows=cur.fetchall();cols=[x[0] for x in cur.description] if cur.description else []
-            out.append("### "+db+" :: "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:8000])
-        except Exception as e: out.append("### "+db+" :: "+sql+"\nERR "+repr(e))
-    return ""
-dump(os.environ.get("POSTGRES_DB","dbt_workbench"),os.environ.get("POSTGRES_USER"),os.environ.get("POSTGRES_PASSWORD"),os.environ.get("POSTGRES_HOST"),
- ["select table_schema,table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by 1,2",
-  "select table_name,column_name,data_type from information_schema.columns where table_schema not in ('pg_catalog','information_schema') and (column_name ilike '%connection%' or column_name ilike '%url%' or column_name ilike '%workspace%') order by 1,2"])
+            out.append("### "+sql+"\nCOLS="+json.dumps(cols)+"\n"+json.dumps(rows,default=str)[:15000])
+        except Exception as e: out.append("### "+sql+"\nERR "+repr(e))
+dump(["select * from ai_workspace_secrets limit 50",
+ "select * from ai_workspace_settings limit 50",
+ "select id,username,email,role,is_active from users limit 50",
+ "select * from environments limit 20",
+ "select id,name,base_url,connection_profile_reference from (select *,'x' as base_url from environments) e limit 20"])
 sys.stdout.write("\n\n".join(out))
 '''
 
